@@ -143,15 +143,28 @@ class WebRTCPhone {
         try {
             console.log('Accepting call...');
             
+            // Умная конфигурация: для localhost не используем STUN, для продакшена - используем
+            const isLocalhost = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1';
+            
+            const iceServers = isLocalhost ? [] : [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ];
+            
+            console.log(`🌐 Environment: ${isLocalhost ? 'LOCAL' : 'PRODUCTION'}, ICE servers:`, iceServers);
+            
             const options = {
                 mediaConstraints: {
                     audio: true,
                     video: false
                 },
                 pcConfig: {
-                    iceServers: [
-                        { urls: 'stun:stun.l.google.com:19302' }
-                    ]
+                    iceServers: iceServers
+                },
+                rtcOfferConstraints: {
+                    offerToReceiveAudio: true,
+                    offerToReceiveVideo: false
                 }
             };
             
@@ -251,15 +264,28 @@ class WebRTCPhone {
         const uri = `sip:${number}@${this.config.domain}`;
         console.log(`📞 Making call to ${uri}`);
         
+        // Умная конфигурация: для localhost не используем STUN, для продакшена - используем
+        const isLocalhost = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+        
+        const iceServers = isLocalhost ? [] : [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ];
+        
+        console.log(`🌐 Environment: ${isLocalhost ? 'LOCAL' : 'PRODUCTION'}, ICE servers:`, iceServers);
+        
         const options = {
             mediaConstraints: {
                 audio: true,
                 video: false
             },
             pcConfig: {
-                iceServers: [
-                    { urls: ['stun:stun.l.google.com:19302'] }
-                ]
+                iceServers: iceServers
+            },
+            rtcOfferConstraints: {
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: false
             }
         };
         

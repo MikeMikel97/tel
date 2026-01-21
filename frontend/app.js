@@ -621,11 +621,6 @@ class AICallAgent {
     }
 }
 
-// Initialize app
-document.addEventListener('DOMContentLoaded', () => {
-    window.app = new AICallAgent();
-});
-
 // Add highlight flash animation
 const style = document.createElement('style');
 style.textContent = `
@@ -638,148 +633,147 @@ document.head.appendChild(style);
 
 // === User & Auth ===
 AICallAgent.prototype.loadUserInfo = async function() {
-        if (!auth.user) {
-            await auth.checkAuth();
+    if (!auth.user) {
+        await auth.checkAuth();
+    }
+    
+    if (auth.user) {
+        const userName = document.getElementById('userName');
+        if (userName) {
+            userName.textContent = auth.user.full_name || auth.user.username;
         }
-        
-        if (auth.user) {
-            const userName = document.getElementById('userName');
-            if (userName) {
-                userName.textContent = auth.user.full_name || auth.user.username;
-            }
-        }
+    }
 };
 
 // === Call History ===
 AICallAgent.prototype.loadCallHistory = async function() {
-        try {
-            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
-            const response = await auth.fetchWithAuth(`${apiUrl}/api/calls/history?limit=50`);
-            const calls = await response.json();
-            
-            const historyContainer = document.getElementById('callsHistory');
-            if (!calls || calls.length === 0) {
-                historyContainer.innerHTML = '<div class="empty-state"><p>История звонков пуста</p></div>';
-                return;
-            }
-
-            historyContainer.innerHTML = calls.map(call => `
-                <div class="history-item">
-                    <div class="history-item-header">
-                        <span class="history-item-number">${this.formatPhoneNumber(call.caller_number === auth.user.sip_username ? call.called_number : call.caller_number)}</span>
-                        <span class="history-item-direction ${call.direction}">${call.direction === 'inbound' ? '📥 Входящий' : '📤 Исходящий'}</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between;">
-                        <span class="history-item-time">${this.formatDateTime(call.started_at)}</span>
-                        ${call.duration ? `<span class="history-item-duration">${this.formatDuration(call.duration)}</span>` : ''}
-                    </div>
-                </div>
-            `).join('');
-        } catch (error) {
-            console.error('Failed to load call history:', error);
+    try {
+        const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
+        const response = await auth.fetchWithAuth(`${apiUrl}/api/calls/history?limit=50`);
+        const calls = await response.json();
+        
+        const historyContainer = document.getElementById('callsHistory');
+        if (!calls || calls.length === 0) {
+            historyContainer.innerHTML = '<div class="empty-state"><p>История звонков пуста</p></div>';
+            return;
         }
+
+        historyContainer.innerHTML = calls.map(call => `
+            <div class="history-item">
+                <div class="history-item-header">
+                    <span class="history-item-number">${this.formatPhoneNumber(call.caller_number === auth.user.sip_username ? call.called_number : call.caller_number)}</span>
+                    <span class="history-item-direction ${call.direction}">${call.direction === 'inbound' ? '📥 Входящий' : '📤 Исходящий'}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span class="history-item-time">${this.formatDateTime(call.started_at)}</span>
+                    ${call.duration ? `<span class="history-item-duration">${this.formatDuration(call.duration)}</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Failed to load call history:', error);
+    }
 };
 
 AICallAgent.prototype.formatDateTime = function(dateString) {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now - date;
-        
-        // Если сегодня
-        if (diff < 86400000 && date.getDate() === now.getDate()) {
-            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        }
-        
-        // Если вчера
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        if (date.getDate() === yesterday.getDate()) {
-            return 'Вчера, ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-        }
-        
-        // Иначе полная дата
-        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now - date;
+    
+    // Если сегодня
+    if (diff < 86400000 && date.getDate() === now.getDate()) {
+        return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Если вчера
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.getDate() === yesterday.getDate()) {
+        return 'Вчера, ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // Иначе полная дата
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
 };
 
 AICallAgent.prototype.formatDuration = function(seconds) {
-        if (!seconds) return '';
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    if (!seconds) return '';
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
 // === Tabs ===
 AICallAgent.prototype.setupTabs = function() {
-        const tabBtns = document.querySelectorAll('.tab-btn');
-        tabBtns.forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const tab = btn.dataset.tab;
-                
-                // Update active tab button
-                tabBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                // Show corresponding content
-                const activeContent = document.querySelector(`[data-tab-content="active"]`);
-                const historyContent = document.querySelector(`[data-tab-content="history"]`);
-                
-                if (tab === 'active') {
-                    activeContent.style.display = '';
-                    historyContent.style.display = 'none';
-                } else {
-                    activeContent.style.display = 'none';
-                    historyContent.style.display = '';
-                    await this.loadCallHistory();
-                }
-            });
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            const tab = btn.dataset.tab;
+            
+            // Update active tab button
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Show corresponding content
+            const activeContent = document.querySelector(`[data-tab-content="active"]`);
+            const historyContent = document.querySelector(`[data-tab-content="history"]`);
+            
+            if (tab === 'active') {
+                activeContent.style.display = '';
+                historyContent.style.display = 'none';
+            } else {
+                activeContent.style.display = 'none';
+                historyContent.style.display = '';
+                await this.loadCallHistory();
+            }
         });
+    });
 };
 
 // === Outbound Calls ===
 AICallAgent.prototype.setupOutboundCalls = function() {
-        const makeCallBtn = document.getElementById('makeCallBtn');
-        const outboundNumber = document.getElementById('outboundNumber');
-        
-        if (makeCallBtn) {
-            makeCallBtn.addEventListener('click', () => {
-                const number = outboundNumber.value.trim();
-                if (number) {
-                    this.makeOutboundCall(number);
-                } else {
-                    alert('Введите номер телефона');
-                }
-            });
-        }
-        
-        if (outboundNumber) {
-            outboundNumber.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    makeCallBtn.click();
-                }
-            });
-        }
+    const makeCallBtn = document.getElementById('makeCallBtn');
+    const outboundNumber = document.getElementById('outboundNumber');
+    
+    if (makeCallBtn) {
+        makeCallBtn.addEventListener('click', () => {
+            const number = outboundNumber.value.trim();
+            if (number) {
+                this.makeOutboundCall(number);
+            } else {
+                alert('Введите номер телефона');
+            }
+        });
+    }
+    
+    if (outboundNumber) {
+        outboundNumber.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                makeCallBtn.click();
+            }
+        });
+    }
 };
 
 AICallAgent.prototype.makeOutboundCall = function(number) {
-        if (!this.isPhoneConnected) {
-            alert('Сначала подключите телефон!');
-            return;
-        }
-        
-        console.log('Making outbound call to:', number);
-        this.phone.call(number);
+    if (!this.isPhoneConnected) {
+        alert('Сначала подключите телефон!');
+        return;
+    }
+    
+    console.log('Making outbound call to:', number);
+    this.phone.call(number);
 };
 
 // === Logout ===
 AICallAgent.prototype.setupLogout = function() {
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', () => {
-                if (confirm('Вы уверены что хотите выйти?')) {
-                    auth.logout();
-                }
-            });
-        }
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            if (confirm('Вы уверены что хотите выйти?')) {
+                auth.logout();
+            }
+        });
     }
 };
 

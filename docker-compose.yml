@@ -30,6 +30,8 @@ services:
       - "10000-10100:10000-10100/udp"
     volumes:
       # Конфигурационные файлы (статические)
+      - ./asterisk/asterisk.conf:/etc/asterisk/asterisk.conf:ro
+      - ./asterisk/ari.conf:/etc/asterisk/ari.conf:ro
       - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf:ro
       - ./asterisk/pjsip_mango.conf:/etc/asterisk/pjsip_mango.conf:ro
       - ./asterisk/http.conf:/etc/asterisk/http.conf:ro

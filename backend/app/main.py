@@ -16,6 +16,7 @@ from .services.call_manager import call_manager
 from .services.asterisk_ari import ari_service, audio_receiver
 from .api import auth, admin
 from .database import Base, engine
+from .admin_panel import setup_admin
 
 settings = get_settings()
 
@@ -85,6 +86,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Setup Admin Panel
+setup_admin(app, engine)
 
 # CORS для фронтенда
 app.add_middleware(

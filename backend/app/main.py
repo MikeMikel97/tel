@@ -11,10 +11,11 @@ from fastapi.responses import FileResponse
 from loguru import logger
 
 from .config import get_settings
-from .models import Call, CallEvent, Suggestion
+from .schemas.events import Call, CallEvent, Suggestion
 from .services.call_manager import call_manager
 from .services.asterisk_ari import ari_service, audio_receiver
 from .api import auth, admin
+from .database import Base, engine
 
 settings = get_settings()
 
@@ -202,7 +203,7 @@ async def demo_start_call():
 
 async def _demo_call_flow(call_id: str):
     """Эмулирует поток звонка для демо"""
-    from .models import TranscriptSegment, CallDirection
+    from .schemas.events import TranscriptSegment, CallDirection
     from .services.ai_agent import ai_agent
     
     await asyncio.sleep(2)

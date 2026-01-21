@@ -8,11 +8,11 @@ from app.config import settings
 
 # Create database engine
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.database_url,
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,
-    echo=settings.DEBUG
+    echo=settings.debug
 )
 
 # Create session factory

@@ -4,7 +4,7 @@ from typing import Optional, List
 import httpx
 from loguru import logger
 from ..config import get_settings
-from ..models import Suggestion, TranscriptSegment
+from ..schemas.events import Suggestion, TranscriptSegment
 from datetime import datetime
 
 settings = get_settings()

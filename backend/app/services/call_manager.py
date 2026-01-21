@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Dict, Optional, Callable, List
 from loguru import logger
 
-from ..models import Call, CallStatus, CallDirection, TranscriptSegment, Suggestion, CallEvent
+from ..schemas.events import Call, CallStatus, CallDirection, TranscriptSegment, Suggestion, CallEvent
 from .transcription import transcription_service
 from .ai_agent import ai_agent
 

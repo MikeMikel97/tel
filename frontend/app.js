@@ -458,9 +458,10 @@ class AICallAgent {
             this.elements.connectPhoneBtn.disabled = true;
             this.elements.connectPhoneBtn.textContent = 'Подключение...';
             
+            const host = window.location.hostname;
             this.phone = new WebRTCPhone({
-                server: 'ws://localhost:8088/asterisk/ws',
-                domain: 'localhost',
+                server: `ws://${host}:8088/asterisk/ws`,
+                domain: host,
                 realm: 'asterisk',
                 username: 'operator',
                 password: 'operator123',

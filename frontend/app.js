@@ -472,9 +472,13 @@ class AICallAgent {
                     this.elements.connectPhoneBtn.textContent = 'Отключить телефон';
                     this.elements.connectPhoneBtn.disabled = false;
                     this.elements.connectPhoneBtn.classList.add('btn-success');
-                    // Показываем кнопки тестовых звонков
-                    this.elements.testCallEchoBtn.style.display = 'block';
-                    this.elements.testCallTimeBtn.style.display = 'block';
+                    // Показываем кнопки тестовых звонков (если они есть)
+                    if (this.elements.testCallEchoBtn) {
+                        this.elements.testCallEchoBtn.style.display = 'block';
+                    }
+                    if (this.elements.testCallTimeBtn) {
+                        this.elements.testCallTimeBtn.style.display = 'block';
+                    }
                 },
                 
                 onDisconnected: () => {
@@ -483,9 +487,13 @@ class AICallAgent {
                     this.elements.connectPhoneBtn.textContent = 'Подключить телефон';
                     this.elements.connectPhoneBtn.classList.remove('btn-success');
                     this.elements.connectPhoneBtn.disabled = false;
-                    // Скрываем кнопки тестовых звонков
-                    this.elements.testCallEchoBtn.style.display = 'none';
-                    this.elements.testCallTimeBtn.style.display = 'none';
+                    // Скрываем кнопки тестовых звонков (если они есть)
+                    if (this.elements.testCallEchoBtn) {
+                        this.elements.testCallEchoBtn.style.display = 'none';
+                    }
+                    if (this.elements.testCallTimeBtn) {
+                        this.elements.testCallTimeBtn.style.display = 'none';
+                    }
                 },
                 
                 onIncomingCall: (callInfo) => {

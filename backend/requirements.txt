@@ -17,6 +17,15 @@ pydub==0.25.1
 numpy==1.26.3
 soundfile==0.12.1
 
+# База данных
+sqlalchemy==2.0.25
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Аутентификация
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
 # Утилиты
 python-dotenv==1.0.0
 pydantic==2.5.3

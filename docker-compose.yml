@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: telephony-postgres
+    environment:
+      POSTGRES_DB: telephony
+      POSTGRES_USER: telephony_user
+      POSTGRES_PASSWORD: telephony_password_2024
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telephony_user -d telephony"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   asterisk:
     build:
       context: .
@@ -45,6 +63,8 @@ services:
     env_file:
       - ./backend/.env
     depends_on:
+      postgres:
+        condition: service_healthy
       asterisk:
         condition: service_healthy
     restart: unless-stopped
@@ -64,6 +84,7 @@ services:
     restart: unless-stopped
 
 volumes:
+  postgres-data:
   asterisk-logs:
   asterisk-recordings:
   asterisk-sounds:

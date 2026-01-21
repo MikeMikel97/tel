@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Call Agent — Помощник оператора</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=2">
+    <!-- JsSIP для WebRTC -->
+    <script src="jssip-bundle.js?v=6"></script>
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <rect width="32" height="32" rx="8" fill="url(#logo-gradient)"/>
+                        <path d="M10 16C10 12.6863 12.6863 10 16 10C19.3137 10 22 12.6863 22 16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M12 16C12 13.7909 13.7909 12 16 12C18.2091 12 20 13.7909 20 16" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="16" cy="16" r="2" fill="white"/>
+                        <path d="M16 18V22" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="logo-gradient" x1="0" y1="0" x2="32" y2="32">
+                                <stop stop-color="#6366F1"/>
+                                <stop offset="1" stop-color="#8B5CF6"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <span>AI Call Agent</span>
+                </div>
+            </div>
+            <div class="header-center">
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Подключение...</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-primary" id="connectPhoneBtn" style="display: block;">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M3 1C2.44772 1 2 1.44772 2 2V14C2 14.5523 2.44772 15 3 15H13C13.5523 15 14 14.5523 14 14V2C14 1.44772 13.5523 1 13 1H3Z" stroke="currentColor" stroke-width="1.5"/>
+                        <rect x="5" y="11" width="6" height="2" rx="1" fill="currentColor"/>
+                    </svg>
+                    Подключить телефон
+                </button>
+                <button class="btn btn-success" id="testCallEchoBtn" style="display: none; margin-left: 8px;">
+                    📞 100 (Эхо)
+                </button>
+                <button class="btn btn-success" id="testCallTimeBtn" style="display: none; margin-left: 8px;">
+                    📞 101 (Время)
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Calls Panel -->
+            <aside class="calls-panel">
+                <div class="panel-header">
+                    <h2>Активные звонки</h2>
+                    <span class="call-count" id="callCount">0</span>
+                </div>
+                <div class="calls-list" id="callsList">
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                            <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
+                            <path d="M24 18V24L28 28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                        <p>Ожидание звонков...</p>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Workspace -->
+            <section class="workspace">
+                <!-- Active Call View -->
+                <div class="active-call" id="activeCall" style="display: none;">
+                    <div class="call-header">
+                        <div class="call-info">
+                            <div class="caller-avatar">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="caller-details">
+                                <span class="caller-number" id="callerNumber">+7 900 123-45-67</span>
+                                <span class="call-duration" id="callDuration">00:00</span>
+                            </div>
+                        </div>
+                        <div class="call-actions">
+                            <button class="btn btn-icon btn-mute" title="Отключить микрофон">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M10 1C8.89543 1 8 1.89543 8 3V10C8 11.1046 8.89543 12 10 12C11.1046 12 12 11.1046 12 10V3C12 1.89543 11.1046 1 10 1Z" stroke="currentColor" stroke-width="1.5"/>
+                                    <path d="M15 8V10C15 12.7614 12.7614 15 10 15C7.23858 15 5 12.7614 5 10V8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    <path d="M10 15V19M7 19H13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                            <button class="btn btn-icon btn-hangup" id="hangupBtn" title="Завершить звонок">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                    <path d="M1.5 8.5C1.5 8.5 4 6 10 6C16 6 18.5 8.5 18.5 8.5V11.5C18.5 12.0523 18.0523 12.5 17.5 12.5H14.5C13.9477 12.5 13.5 12.0523 13.5 11.5V10C13.5 10 12 9 10 9C8 9 6.5 10 6.5 10V11.5C6.5 12.0523 6.05228 12.5 5.5 12.5H2.5C1.94772 12.5 1.5 12.0523 1.5 11.5V8.5Z" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Transcript & Suggestions Grid -->
+                    <div class="call-content">
+                        <!-- Transcript -->
+                        <div class="transcript-panel">
+                            <div class="panel-title">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                    <path d="M3 5H15M3 9H11M3 13H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                                Транскрипция
+                            </div>
+                            <div class="transcript-content" id="transcriptContent">
+                                <!-- Сообщения будут добавляться динамически -->
+                            </div>
+                        </div>
+
+                        <!-- Suggestions -->
+                        <div class="suggestions-panel">
+                            <div class="panel-title">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                                    <path d="M9 1V3M9 15V17M1 9H3M15 9H17M3.93 3.93L5.34 5.34M12.66 12.66L14.07 14.07M3.93 14.07L5.34 12.66M12.66 5.34L14.07 3.93" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    <circle cx="9" cy="9" r="3" stroke="currentColor" stroke-width="1.5"/>
+                                </svg>
+                                AI Подсказки
+                            </div>
+                            <div class="suggestions-content" id="suggestionsContent">
+                                <div class="suggestion-placeholder">
+                                    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                                        <circle cx="20" cy="20" r="16" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4"/>
+                                        <path d="M20 14V20L24 24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                                    </svg>
+                                    <p>AI анализирует разговор...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div class="empty-workspace" id="emptyWorkspace">
+                    <div class="empty-illustration">
+                        <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
+                            <circle cx="60" cy="60" r="50" stroke="url(#empty-gradient)" stroke-width="2" stroke-dasharray="8 8"/>
+                            <circle cx="60" cy="60" r="30" stroke="url(#empty-gradient)" stroke-width="2"/>
+                            <path d="M60 45V60L70 70" stroke="url(#empty-gradient)" stroke-width="3" stroke-linecap="round"/>
+                            <circle cx="60" cy="60" r="5" fill="url(#empty-gradient)"/>
+                            <defs>
+                                <linearGradient id="empty-gradient" x1="10" y1="10" x2="110" y2="110">
+                                    <stop stop-color="#6366F1"/>
+                                    <stop offset="1" stop-color="#8B5CF6"/>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <h2>Выберите звонок</h2>
+                    <p>Когда поступит звонок, выберите его из списка слева для отображения транскрипции и AI-подсказок</p>
+                    <button class="btn btn-primary btn-large" id="demoBtn2">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                            <path d="M5 3L15 10L5 17V3Z" fill="currentColor"/>
+                        </svg>
+                        Запустить демо
+                    </button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="webrtc.js?v=10"></script>
+    <script src="app.js?v=10"></script>
+</body>
+</html>

@@ -7,9 +7,10 @@ from starlette.responses import RedirectResponse
 
 
 class AdminAuth(AuthenticationBackend):
-    """Simple password-based authentication for admin panel"""
+    """Simple username/password authentication for admin panel"""
     
-    # Пароль для доступа в админ-панель
+    # Учетные данные для доступа в админ-панель
+    ADMIN_USERNAME = "admin"
     ADMIN_PASSWORD = "D7eva123qwerty"
     
     async def login(self, request: Request) -> bool:
@@ -17,9 +18,10 @@ class AdminAuth(AuthenticationBackend):
         Handle login request
         """
         form = await request.form()
+        username = form.get("username", "")
         password = form.get("password", "")
         
-        if password == self.ADMIN_PASSWORD:
+        if username == self.ADMIN_USERNAME and password == self.ADMIN_PASSWORD:
             # Сохраняем в сессии что пользователь аутентифицирован
             request.session.update({"admin_authenticated": True})
             return True

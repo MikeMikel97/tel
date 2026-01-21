@@ -636,8 +636,8 @@ style.textContent = `
 `;
 document.head.appendChild(style);
 
-    // === User & Auth ===
-    async loadUserInfo() {
+// === User & Auth ===
+AICallAgent.prototype.loadUserInfo = async function() {
         if (!auth.user) {
             await auth.checkAuth();
         }
@@ -648,10 +648,10 @@ document.head.appendChild(style);
                 userName.textContent = auth.user.full_name || auth.user.username;
             }
         }
-    }
+};
 
-    // === Call History ===
-    async loadCallHistory() {
+// === Call History ===
+AICallAgent.prototype.loadCallHistory = async function() {
         try {
             const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
             const response = await auth.fetchWithAuth(`${apiUrl}/api/calls/history?limit=50`);
@@ -678,9 +678,9 @@ document.head.appendChild(style);
         } catch (error) {
             console.error('Failed to load call history:', error);
         }
-    }
+};
 
-    formatDateTime(dateString) {
+AICallAgent.prototype.formatDateTime = function(dateString) {
         const date = new Date(dateString);
         const now = new Date();
         const diff = now - date;
@@ -699,17 +699,17 @@ document.head.appendChild(style);
         
         // Иначе полная дата
         return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    }
+};
 
-    formatDuration(seconds) {
+AICallAgent.prototype.formatDuration = function(seconds) {
         if (!seconds) return '';
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
-    }
+};
 
-    // === Tabs ===
-    setupTabs() {
+// === Tabs ===
+AICallAgent.prototype.setupTabs = function() {
         const tabBtns = document.querySelectorAll('.tab-btn');
         tabBtns.forEach(btn => {
             btn.addEventListener('click', async () => {
@@ -733,10 +733,10 @@ document.head.appendChild(style);
                 }
             });
         });
-    }
+};
 
-    // === Outbound Calls ===
-    setupOutboundCalls() {
+// === Outbound Calls ===
+AICallAgent.prototype.setupOutboundCalls = function() {
         const makeCallBtn = document.getElementById('makeCallBtn');
         const outboundNumber = document.getElementById('outboundNumber');
         
@@ -758,9 +758,9 @@ document.head.appendChild(style);
                 }
             });
         }
-    }
+};
 
-    makeOutboundCall(number) {
+AICallAgent.prototype.makeOutboundCall = function(number) {
         if (!this.isPhoneConnected) {
             alert('Сначала подключите телефон!');
             return;
@@ -768,10 +768,10 @@ document.head.appendChild(style);
         
         console.log('Making outbound call to:', number);
         this.phone.call(number);
-    }
+};
 
-    // === Logout ===
-    setupLogout() {
+// === Logout ===
+AICallAgent.prototype.setupLogout = function() {
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => {
@@ -781,7 +781,7 @@ document.head.appendChild(style);
             });
         }
     }
-}
+};
 
 // Override init method
 AICallAgent.prototype.init = function() {

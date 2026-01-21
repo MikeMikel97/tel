@@ -130,7 +130,8 @@ TOKEN=$(curl -s -X POST http://YOUR_SERVER_IP:8000/api/auth/login \
 
 - **UI Операторов:** `http://YOUR_SERVER_IP:3003`
 - **Админ-панель:** `http://YOUR_SERVER_IP:8000/admin`
-  - Пароль: `D7eva123qwerty`
+  - Username: `admin`
+  - Password: `D7eva123qwerty`
 - **API документация:** `http://YOUR_SERVER_IP:8000/docs`
 - **Backend API:** `http://YOUR_SERVER_IP:8000/api`
 
@@ -349,7 +350,7 @@ docker logs telephony-asterisk
 
 1. **Смените все пароли по умолчанию** в:
    - `backend/.env` (JWT_SECRET_KEY, DATABASE_URL, ASTERISK_ARI_PASSWORD)
-   - `backend/app/admin_auth.py` (ADMIN_PASSWORD)
+   - `backend/app/admin_auth.py` (ADMIN_USERNAME и ADMIN_PASSWORD)
    - Админ-панель (создайте нового админа и удалите дефолтного)
 
 2. **Используйте HTTPS** (Nginx + Let's Encrypt)

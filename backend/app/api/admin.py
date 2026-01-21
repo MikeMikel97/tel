@@ -9,6 +9,7 @@ from app.core.deps import get_db, get_current_admin_user
 from app.schemas.company import CompanyCreate, CompanyUpdate, CompanyResponse
 from app.models.company import Company
 from app.models.user import User
+from app.services.asterisk_config_generator import config_generator
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -116,3 +117,76 @@ def delete_company(
     db.delete(company)
     db.commit()
     return None
+
+
+# ========================================
+# Asterisk Configuration Management
+# ========================================
+
+@router.post("/asterisk/generate-config")
+def generate_asterisk_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Generate Asterisk configuration files from database
+    """
+    try:
+        result = config_generator.generate_all_configs(db)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate config: {str(e)}"
+        )
+
+
+@router.post("/asterisk/reload")
+def reload_asterisk(
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Reload Asterisk configuration
+    """
+    try:
+        result = config_generator.reload_asterisk()
+        if result["status"] == "error":
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=result["message"]
+            )
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reload Asterisk: {str(e)}"
+        )
+
+
+@router.post("/asterisk/apply-config")
+def apply_asterisk_config(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user)
+):
+    """
+    Generate and reload Asterisk configuration
+    """
+    try:
+        # Generate configs
+        gen_result = config_generator.generate_all_configs(db)
+        
+        # Reload Asterisk
+        reload_result = config_generator.reload_asterisk()
+        
+        return {
+            "status": "success",
+            "generation": gen_result,
+            "reload": reload_result
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to apply config: {str(e)}"
+        )

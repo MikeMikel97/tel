@@ -17,12 +17,14 @@ class PhoneNumber(Base):
     number = Column(String(20), unique=True, nullable=False, index=True)
     display_name = Column(String(100))
     is_available = Column(Boolean, default=True)
+    assigned_user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
     company = relationship("Company", back_populates="phone_numbers")
     trunk = relationship("SIPTrunk", back_populates="phone_numbers")
-    users = relationship("User", back_populates="current_number")
+    users = relationship("User", back_populates="current_number", foreign_keys="User.current_number_id")
+    assigned_user = relationship("User", foreign_keys=[assigned_user_id], post_update=True)
 
     def __repr__(self):
         return f"<PhoneNumber(id={self.id}, number='{self.number}')>"

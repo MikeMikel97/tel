@@ -29,13 +29,15 @@ services:
       - "8088:8088/tcp"
       - "10000-10100:10000-10100/udp"
     volumes:
-      # Конфигурационные файлы
+      # Конфигурационные файлы (статические)
       - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf:ro
       - ./asterisk/pjsip_mango.conf:/etc/asterisk/pjsip_mango.conf:ro
       - ./asterisk/http.conf:/etc/asterisk/http.conf:ro
       - ./asterisk/extensions.conf:/etc/asterisk/extensions.conf:ro
       - ./asterisk/extensions_mango.conf:/etc/asterisk/extensions_mango.conf:ro
       - ./asterisk/modules.conf:/etc/asterisk/modules.conf:ro
+      # Динамические конфиги (генерируются из БД)
+      - asterisk-dynamic-configs:/etc/asterisk/dynamic:rw
       # Логи и записи
       - asterisk-logs:/var/log/asterisk
       - asterisk-recordings:/var/spool/asterisk/monitor
@@ -60,6 +62,10 @@ services:
     volumes:
       - ./backend:/app
       - backend-data:/app/data
+      # Общий volume для динамических конфигов Asterisk
+      - asterisk-dynamic-configs:/etc/asterisk/dynamic:rw
+      # Docker socket для управления Asterisk контейнером
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     env_file:
       - ./backend/.env
     depends_on:
@@ -88,4 +94,5 @@ volumes:
   asterisk-logs:
   asterisk-recordings:
   asterisk-sounds:
+  asterisk-dynamic-configs:
   backend-data:

@@ -14,6 +14,7 @@ from .config import get_settings
 from .models import Call, CallEvent, Suggestion
 from .services.call_manager import call_manager
 from .services.asterisk_ari import ari_service, audio_receiver
+from .api import auth, admin
 
 settings = get_settings()
 
@@ -92,6 +93,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include API routers
+app.include_router(auth.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 
 # === REST API Endpoints ===

@@ -39,7 +39,8 @@ class AsteriskConfigGenerator:
             phone_numbers = db.query(PhoneNumber).filter(PhoneNumber.is_available == True).all()
             
             # Генерируем конфиги
-            pjsip_content = self._generate_pjsip_config(companies, users, trunks, phone_numbers)
+            # ВАЖНО: SIP транки настраиваются вручную в pjsip_mango.conf, генерируем только WebRTC операторов
+            pjsip_content = self._generate_pjsip_config(companies, users, [], phone_numbers)  # Передаем пустой список транков
             extensions_content = self._generate_extensions_config(companies, users, trunks, phone_numbers)
             
             # Сохраняем файлы
@@ -297,7 +298,8 @@ class AsteriskConfigGenerator:
             # Исходящие звонки через транк
             if company_trunks:
                 trunk = company_trunks[0]  # Используем первый доступный транк
-                trunk_name = f"trunk_{trunk.id}_{trunk.provider}"
+                # Используем статический транк mango-trunk для Mango Office
+                trunk_name = "mango-trunk" if trunk.provider == "mango" else f"trunk_{trunk.id}_{trunk.provider}"
                 
                 lines.extend([
                     "; Исходящие звонки",

@@ -599,20 +599,13 @@ class AICallAgent {
     
     async startDemo() {
         try {
-            const response = await fetch('/api/demo/call', { method: 'POST' });
+            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
+            const response = await fetch(`${apiUrl}/api/demo/call`, { method: 'POST' });
             const data = await response.json();
             console.log('Demo started:', data);
         } catch (e) {
             console.error('Failed to start demo:', e);
-            // Try with full URL
-            try {
-                const response = await fetch('http://localhost:8000/api/demo/call', { method: 'POST' });
-                const data = await response.json();
-                console.log('Demo started:', data);
-            } catch (e2) {
-                console.error('Failed to start demo (full URL):', e2);
-                alert('Не удалось запустить демо. Убедитесь, что backend запущен на порту 8000.');
-            }
+            alert('Не удалось запустить демо. Убедитесь, что backend запущен.');
         }
     }
     
@@ -620,13 +613,10 @@ class AICallAgent {
         if (!this.activeCallId) return;
         
         try {
-            await fetch(`/api/demo/end/${this.activeCallId}`, { method: 'POST' });
+            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
+            await fetch(`${apiUrl}/api/demo/end/${this.activeCallId}`, { method: 'POST' });
         } catch (e) {
-            try {
-                await fetch(`http://localhost:8000/api/demo/end/${this.activeCallId}`, { method: 'POST' });
-            } catch (e2) {
-                console.error('Failed to end call:', e2);
-            }
+            console.error('Failed to end call:', e);
         }
     }
 }
@@ -663,7 +653,8 @@ document.head.appendChild(style);
     // === Call History ===
     async loadCallHistory() {
         try {
-            const response = await auth.fetchWithAuth('/api/calls/history?limit=50');
+            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
+            const response = await auth.fetchWithAuth(`${apiUrl}/api/calls/history?limit=50`);
             const calls = await response.json();
             
             const historyContainer = document.getElementById('callsHistory');

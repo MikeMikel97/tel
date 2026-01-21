@@ -27,7 +27,8 @@ class Auth {
         }
 
         try {
-            const response = await fetch('/api/auth/me', {
+            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
+            const response = await fetch(`${apiUrl}/api/auth/me`, {
                 headers: this.getAuthHeader()
             });
 

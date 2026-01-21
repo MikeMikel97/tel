@@ -1,234 +1,212 @@
-# 🤖 AI Call Agent - Телефонный AI-агент
+# AI Call Agent - WebRTC Телефония с AI
 
-Система для автоматизации входящих звонков с использованием AI (LLM + Voice-to-Text).
+Система для обработки звонков с искусственным интеллектом, построенная на Asterisk, FastAPI и WebRTC.
 
-## 🏗️ Архитектура
-
-- **Asterisk 20** - PBX с поддержкой WebRTC и PJSIP
-- **Mango Office** - облачная телефония (SIP транк)
-- **FastAPI** - backend для AI логики
-- **WebRTC** - браузерный телефон оператора
-- **OpenRouter** - LLM провайдер
-- **Soniox** - распознавание русской речи (V2T)
-
-## 🚀 Быстрый старт
-
-### 1. Предварительные требования
-
-- Docker и Docker Compose
-- Минимум 2GB RAM
-- Порты 3000, 5060, 8000, 8088 свободны
-
-### 2. Установка
+## 🚀 Быстрый старт (Docker)
 
 ```bash
-# Клонируйте репозиторий
-git clone <repo-url>
-cd Telephony
+# 1. Клонировать репозиторий
+git clone https://github.com/MikeMikel97/tel.git
+cd tel
 
-# Скопируйте и заполните .env файл
-cp backend/env.example backend/.env
-# Откройте backend/.env и вставьте API ключи:
-#   - OPENROUTER_API_KEY
-#   - SONIOX_API_KEY
+# 2. Настроить environment
+cp backend/.env.example backend/.env
+# Отредактировать backend/.env (указать API ключи если нужны)
 
-# Запустите систему
-./start.sh
+# 3. Запустить все сервисы
+docker compose up -d
+
+# 4. Проверить статус
+docker compose ps
 ```
 
-### 3. Проверка работы
+**Доступ к интерфейсам:**
+- 🎯 **Operator UI:** http://localhost:3003 (логин: `operator`, пароль: `operator123`)
+- 🔧 **Admin Panel:** http://localhost:8000/admin (логин: `admin`, пароль: `D7eva123qwerty`)
+- 📚 **API Docs:** http://localhost:8000/docs
 
-После запуска:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000/docs
-- Asterisk CLI: `docker exec -it telephony-asterisk asterisk -rvvv`
+---
 
-## 📋 Конфигурация
+## 📁 Структура проекта
+
+```
+Telephony/
+├── asterisk/          # Asterisk конфигурация (pjsip, extensions, http)
+├── backend/           # FastAPI бэкенд (Python)
+│   ├── app/
+│   │   ├── api/       # REST API endpoints
+│   │   ├── models/    # SQLAlchemy модели (PostgreSQL)
+│   │   ├── services/  # Бизнес-логика (AI, Asterisk config)
+│   │   └── core/      # Auth, security, deps
+│   └── .env           # Environment переменные
+├── frontend/          # WebRTC интерфейс оператора (HTML/JS)
+└── docker-compose.yml # Orchestration
+```
+
+---
+
+## 🔑 Основные возможности
+
+### ✅ Реализовано
+- **WebRTC телефон** для операторов (JsSIP + Asterisk)
+- **PostgreSQL** для хранения данных (компании, пользователи, звонки)
+- **Админ-панель** (SQLAdmin) для управления:
+  - Компаниями
+  - SIP транками (Mango Office и др.)
+  - Телефонными номерами
+  - Пользователями (операторы/админы)
+  - История звонков
+- **Авторизация** для операторов (JWT)
+- **История звонков** в UI
+- **Динамическая генерация конфигов Asterisk** из БД
+- **Исходящие звонки** через UI
+
+### 🔜 Планируется
+- Интеграция LLM для анализа разговоров (OpenRouter)
+- Speech-to-Text (Soniox API)
+- Real-time подсказки операторам
+- Расширенная статистика и аналитика
+
+---
+
+## 🗄️ База данных
+
+### Таблицы
+- `companies` — клиентские компании
+- `users` — операторы и админы
+- `sip_trunks` — SIP провайдеры (Mango, Beeline и т.д.)
+- `phone_numbers` — телефонные номера
+- `call_sessions` — история звонков
+
+### Связи
+- `Company` → `SIPTrunk` (1:N)
+- `Company` → `PhoneNumber` (1:N)
+- `Company` → `User` (1:N)
+- `User` → `PhoneNumber` (N:1 current_number)
+- `CallSession` → `User` (N:1)
+
+---
+
+## ⚙️ Конфигурация
+
+### Backend (.env)
+```env
+DATABASE_URL=postgresql+psycopg2://telephony_user:telephony_password_2024@postgres:5432/telephony
+JWT_SECRET_KEY=your-secret-key
+OPENROUTER_API_KEY=sk-or-v1-...
+SONIOX_API_KEY=...
+```
 
 ### Asterisk
+- **Статические конфиги:** `asterisk/pjsip.conf`, `asterisk/extensions.conf`
+- **Динамические конфиги:** генерируются backend'ом в `asterisk/dynamic/`
+  - Генерация: `POST /api/admin/asterisk/generate-config`
+  - Применение: вручную `docker exec telephony-asterisk asterisk -rx "core reload"`
 
-Конфигурационные файлы в `./asterisk/`:
-- `pjsip.conf` - основная конфигурация PJSIP
-- `pjsip_mango.conf` - настройки Mango Office SIP транка
-- `extensions.conf` - диалплан
-- `extensions_mango.conf` - обработка входящих от Mango
-- `http.conf` - HTTP/WebSocket сервер для WebRTC
-- `modules.conf` - загружаемые модули
+---
 
-### Backend
+## 👤 Управление пользователями
 
-Настройки в `backend/.env`:
-```env
-OPENROUTER_API_KEY=your_key
-OPENROUTER_MODEL=anthropic/claude-3.5-sonnet
+### Создание оператора через админку:
+1. Открыть http://localhost:8000/admin
+2. Войти (`admin` / `D7eva123qwerty`)
+3. Перейти в "Пользователи" → "Create"
+4. Заполнить:
+   - **Компания ID**: выбрать компанию
+   - **Логин**: имя для входа в UI
+   - **Пароль для входа в UI**: пароль для localhost:3003
+   - **SIP логин**: для регистрации в Asterisk
+   - **SIP пароль**: для Asterisk (не для UI!)
+   - **Роль**: `operator` или `admin`
 
-SONIOX_API_KEY=your_key
-SONIOX_MODEL=ru
+**Примечание:** Если пароль не указать, будет использован `operator123` по умолчанию.
 
-ASTERISK_ARI_URL=http://asterisk:8088/ari
-ASTERISK_ARI_USER=asterisk
-ASTERISK_ARI_PASSWORD=asterisk
-```
+---
 
 ## 🧪 Тестирование
 
-### Тест эхо (локально)
-1. Откройте http://localhost:3000
-2. Подключитесь как `operator` / `operator123`
-3. Позвоните на `100` - услышите эхо
+### Проверка WebRTC
+1. Открыть http://localhost:3003
+2. Войти (operator/operator123)
+3. Нажать "Подключить телефон"
+4. Позвонить на `100` (эхо-тест) или `101` (время)
 
-### Тест времени
-1. Позвоните на `101` - услышите текущее время
-
-### Тест исходящего звонка через Mango
-1. Наберите номер (например, `+79991234567`)
-2. Звонок пойдёт через Mango Office SIP транк
-
-## 📊 Мониторинг
-
-### Логи
-
+### Проверка API
 ```bash
-# Все сервисы
-docker-compose logs -f
+# Получить токен
+curl -X POST http://localhost:8000/api/auth/token \
+  -d "username=operator&password=operator123" \
+  -H "Content-Type: application/x-www-form-urlencoded"
 
-# Только Asterisk
-docker-compose logs -f asterisk
+# Получить информацию о пользователе
+curl http://localhost:8000/api/auth/me \
+  -H "Authorization: Bearer YOUR_TOKEN"
 
-# Только Backend
-docker-compose logs -f backend
+# История звонков
+curl http://localhost:8000/api/calls/history \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### Asterisk CLI
+---
+
+## 🔧 Полезные команды
 
 ```bash
+# Логи
+docker compose logs -f backend
+docker compose logs -f asterisk
+
+# Перезапуск сервисов
+docker compose restart backend
+docker compose restart asterisk
+
+# Консоль Asterisk
 docker exec -it telephony-asterisk asterisk -rvvv
 
-# Полезные команды в CLI:
-pjsip show registrations     # Статус регистрации на Mango
-pjsip show endpoints          # Список endpoints
-pjsip show transports         # WebSocket и UDP транспорты
-core show channels            # Активные звонки
-module show like pjsip        # PJSIP модули
+# Postgres CLI
+docker exec -it telephony-postgres psql -U telephony_user -d telephony
+
+# Полная пересборка
+docker compose down
+docker compose build --no-cache
+docker compose up -d
 ```
 
-### Health Checks
+---
 
-```bash
-# Asterisk
-curl http://localhost:8088/ari/asterisk/info
+## 📞 Подключение SIP провайдера (Mango Office)
 
-# Backend
-curl http://localhost:8000/health
-```
+1. Открыть админку → "SIP Транки" → "Create"
+2. Заполнить данные от Mango:
+   - **Server URI**: `sip:xxxxx@sipdir.mangosip.ru`
+   - **Client URI**: `sip:xxxxx@sipdir.mangosip.ru`
+   - **Username**: ваш ID
+   - **Password**: ваш секрет
+3. Сохранить
+4. Генерировать конфиги: `POST /api/admin/asterisk/generate-config`
+5. Перезагрузить Asterisk: `docker exec telephony-asterisk asterisk -rx "core reload"`
 
-## 🐛 Troubleshooting
+---
 
-### Asterisk не регистрируется на Mango
+## 🚀 Деплой на сервер
 
-```bash
-# Проверьте логи
-docker-compose logs asterisk | grep -i mango
+1. Установить Docker и Docker Compose
+2. Клонировать репозиторий
+3. Обновить `.env` с реальными API ключами
+4. Настроить Nginx как reverse proxy (SSL + WebSocket)
+5. Открыть порты: `5060/udp` (SIP), `10000-10100/udp` (RTP), `80/tcp`, `443/tcp`
+6. Запустить: `docker compose up -d`
 
-# Проверьте статус регистрации
-docker exec telephony-asterisk asterisk -rx "pjsip show registrations"
+**Важно:** В production используйте HTTPS и WSS для WebRTC!
 
-# Проверьте пароль в asterisk/pjsip_mango.conf
-```
+---
 
-### WebRTC не подключается
-
-```bash
-# Проверьте что порт 8088 открыт
-netstat -an | grep 8088
-
-# Проверьте WebSocket транспорт
-docker exec telephony-asterisk asterisk -rx "pjsip show transports"
-
-# Убедитесь что SSL сертификаты созданы
-ls -la asterisk/keys/asterisk.pem
-```
-
-### PJSIP модули не загружаются
-
-```bash
-# Проверьте загрузку модулей
-docker exec telephony-asterisk asterisk -rx "module show like pjsip"
-
-# Перезапустите Asterisk
-docker-compose restart asterisk
-
-# Если не помогает - пересоберите образ
-docker-compose build --no-cache asterisk
-docker-compose up -d asterisk
-```
-
-## 🔧 Разработка
-
-### Горячая перезагрузка Backend
-
-Backend запущен с `--reload`, изменения в `./backend/` применяются автоматически.
-
-### Обновление конфигурации Asterisk
-
-```bash
-# Отредактируйте файлы в ./asterisk/
-# Перезагрузите конфигурацию без перезапуска:
-docker exec telephony-asterisk asterisk -rx "pjsip reload"
-docker exec telephony-asterisk asterisk -rx "dialplan reload"
-```
-
-### Доступ к записям разговоров
-
-```bash
-# Записи сохраняются в Docker volume
-docker volume inspect telephony_asterisk-recordings
-
-# Копирование записи на хост
-docker cp telephony-asterisk:/var/spool/asterisk/monitor/ ./recordings/
-```
-
-## 📦 Деплой на продакшн
-
-### На сервер с Docker
-
-```bash
-# 1. Скопируйте проект на сервер
-scp -r . user@server:/opt/telephony
-
-# 2. На сервере запустите
-cd /opt/telephony
-./start.sh
-
-# 3. Обновите внешние IP в pjsip.conf
-# external_media_address=ВАШ_IP
-# external_signaling_address=ВАШ_IP
-```
-
-### Важно для продакшна
-
-1. **Firewall**: Откройте порты
-   - 5060/UDP - SIP
-   - 8088/TCP - WebSocket
-   - 10000-20000/UDP - RTP (медиа)
-
-2. **SSL**: Используйте Let's Encrypt для WebRTC
-   ```bash
-   certbot certonly --standalone -d yourdomain.com
-   # Скопируйте сертификаты в ./asterisk/keys/
-   ```
-
-3. **Безопасность**: Смените пароли в конфигах
-   - `asterisk/pjsip.conf` - WebRTC оператор
-   - `asterisk/pjsip_mango.conf` - Mango Office
-
-4. **Мониторинг**: Настройте мониторинг контейнеров
-
-## 📚 Дополнительная документация
-
-- [ARCHITECTURE.md](ARCHITECTURE.md) - подробная архитектура
-- [NEXT_STEPS.md](NEXT_STEPS.md) - план развития
-
-## 📝 Лицензия
+## 📝 License
 
 MIT
+
+---
+
+## 🤝 Контакты
+
+GitHub: https://github.com/MikeMikel97/tel

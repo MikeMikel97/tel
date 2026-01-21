@@ -3,8 +3,9 @@ Admin Panel using SQLAdmin
 """
 from sqladmin import Admin, ModelView
 from sqlalchemy import select
-from wtforms import StringField, PasswordField
+from wtforms import StringField, PasswordField, Form
 from wtforms.validators import Optional
+from typing import Type
 
 from .models.company import Company
 from .models.sip_trunk import SIPTrunk
@@ -174,26 +175,8 @@ class UserAdmin(ModelView, model=User):
     column_sortable_list = [User.id, User.username, User.created_at]
     column_default_sort = [(User.created_at, True)]
     
-    # Exclude password_hash from form, we'll handle it separately
-    form_excluded_columns = [User.password_hash, User.last_login, User.assigned_number_ids]
-    
-    # Add custom fields for passwords
-    form_extra_fields = {
-        "password": PasswordField("Пароль для входа в UI", validators=[Optional()]),
-    }
-    
-    form_columns = [
-        User.company_id,
-        User.username,
-        "password",  # Custom field
-        User.full_name,
-        User.email,
-        User.role,
-        User.sip_username,
-        User.sip_password,
-        User.current_number_id,
-        User.is_active
-    ]
+    # Exclude sensitive/auto fields from form
+    form_excluded_columns = [User.password_hash, User.last_login, User.assigned_number_ids, User.created_at, User.call_sessions]
     
     column_labels = {
         User.id: "ID",
@@ -207,7 +190,7 @@ class UserAdmin(ModelView, model=User):
         User.current_number_id: "Текущий номер",
         User.is_active: "Активен",
         User.created_at: "Создан",
-        "password": "Пароль для входа в UI"
+        "new_password": "Пароль для входа в UI"
     }
     
     # Hide passwords in list view
@@ -239,22 +222,37 @@ class UserAdmin(ModelView, model=User):
         }
     }
     
+    async def scaffold_form(self) -> Type[Form]:
+        """
+        Override scaffold_form to add custom password field
+        """
+        form_class = await super().scaffold_form()
+        
+        # Add custom password field
+        form_class.new_password = PasswordField(
+            "Пароль для входа в UI",
+            validators=[Optional()],
+            description="Оставьте пустым для сохранения текущего или автогенерации (operator123 для новых)"
+        )
+        
+        return form_class
+    
     async def on_model_change(self, data, model, is_created, request):
         """
         Handle password hashing when creating/updating user
         """
         # Get password from form
-        password = data.get("password")
+        new_password = data.get("new_password")
         
         # If password provided, hash it
-        if password:
-            model.password_hash = get_password_hash(password)
-            # Remove password from data so it doesn't try to save to DB
-            data.pop("password", None)
+        if new_password:
+            model.password_hash = get_password_hash(new_password)
+            # Remove from data so it doesn't try to save to DB
+            data.pop("new_password", None)
         
-        # If creating new user and no password provided, generate one
-        if is_created and not password:
-            default_password = "operator123"  # You can change this
+        # If creating new user and no password provided, use default
+        elif is_created:
+            default_password = "operator123"
             model.password_hash = get_password_hash(default_password)
         
         return await super().on_model_change(data, model, is_created, request)

@@ -23,8 +23,10 @@ class PhoneNumber(Base):
     # Relationships
     company = relationship("Company", back_populates="phone_numbers")
     trunk = relationship("SIPTrunk", back_populates="phone_numbers")
+    # Relationship for User.current_number_id (one phone can be current for multiple users)
     users = relationship("User", back_populates="current_number", foreign_keys="User.current_number_id")
-    assigned_user = relationship("User", foreign_keys=[assigned_user_id], post_update=True)
+    # Relationship for assigned_user_id (one phone assigned to one user)
+    assigned_user = relationship("User", foreign_keys=[assigned_user_id], post_update=True, overlaps="users,current_number")
 
     def __repr__(self):
         return f"<PhoneNumber(id={self.id}, number='{self.number}')>"

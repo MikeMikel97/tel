@@ -645,3 +645,169 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+    // === User & Auth ===
+    async loadUserInfo() {
+        if (!auth.user) {
+            await auth.checkAuth();
+        }
+        
+        if (auth.user) {
+            const userName = document.getElementById('userName');
+            if (userName) {
+                userName.textContent = auth.user.full_name || auth.user.username;
+            }
+        }
+    }
+
+    // === Call History ===
+    async loadCallHistory() {
+        try {
+            const response = await auth.fetchWithAuth('/api/calls/history?limit=50');
+            const calls = await response.json();
+            
+            const historyContainer = document.getElementById('callsHistory');
+            if (!calls || calls.length === 0) {
+                historyContainer.innerHTML = '<div class="empty-state"><p>История звонков пуста</p></div>';
+                return;
+            }
+
+            historyContainer.innerHTML = calls.map(call => `
+                <div class="history-item">
+                    <div class="history-item-header">
+                        <span class="history-item-number">${this.formatPhoneNumber(call.caller_number === auth.user.sip_username ? call.called_number : call.caller_number)}</span>
+                        <span class="history-item-direction ${call.direction}">${call.direction === 'inbound' ? '📥 Входящий' : '📤 Исходящий'}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span class="history-item-time">${this.formatDateTime(call.started_at)}</span>
+                        ${call.duration ? `<span class="history-item-duration">${this.formatDuration(call.duration)}</span>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        } catch (error) {
+            console.error('Failed to load call history:', error);
+        }
+    }
+
+    formatDateTime(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        // Если сегодня
+        if (diff < 86400000 && date.getDate() === now.getDate()) {
+            return date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Если вчера
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.getDate() === yesterday.getDate()) {
+            return 'Вчера, ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        // Иначе полная дата
+        return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' }) + ', ' + date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    formatDuration(seconds) {
+        if (!seconds) return '';
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // === Tabs ===
+    setupTabs() {
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const tab = btn.dataset.tab;
+                
+                // Update active tab button
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // Show corresponding content
+                const activeContent = document.querySelector(`[data-tab-content="active"]`);
+                const historyContent = document.querySelector(`[data-tab-content="history"]`);
+                
+                if (tab === 'active') {
+                    activeContent.style.display = '';
+                    historyContent.style.display = 'none';
+                } else {
+                    activeContent.style.display = 'none';
+                    historyContent.style.display = '';
+                    await this.loadCallHistory();
+                }
+            });
+        });
+    }
+
+    // === Outbound Calls ===
+    setupOutboundCalls() {
+        const makeCallBtn = document.getElementById('makeCallBtn');
+        const outboundNumber = document.getElementById('outboundNumber');
+        
+        if (makeCallBtn) {
+            makeCallBtn.addEventListener('click', () => {
+                const number = outboundNumber.value.trim();
+                if (number) {
+                    this.makeOutboundCall(number);
+                } else {
+                    alert('Введите номер телефона');
+                }
+            });
+        }
+        
+        if (outboundNumber) {
+            outboundNumber.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    makeCallBtn.click();
+                }
+            });
+        }
+    }
+
+    makeOutboundCall(number) {
+        if (!this.isPhoneConnected) {
+            alert('Сначала подключите телефон!');
+            return;
+        }
+        
+        console.log('Making outbound call to:', number);
+        this.phone.call(number);
+    }
+
+    // === Logout ===
+    setupLogout() {
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+                if (confirm('Вы уверены что хотите выйти?')) {
+                    auth.logout();
+                }
+            });
+        }
+    }
+}
+
+// Override init method
+AICallAgent.prototype.init = function() {
+    this.loadUserInfo();
+    this.connectWebSocket();
+    this.bindEvents();
+    this.setupTabs();
+    this.setupOutboundCalls();
+    this.setupLogout();
+};
+
+// Initialize app after auth check
+document.addEventListener('DOMContentLoaded', async () => {
+    // Wait for auth check
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    if (auth.isAuthenticated()) {
+        window.app = new AICallAgent();
+    }
+});

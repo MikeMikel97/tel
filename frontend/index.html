@@ -40,6 +40,7 @@
                 </div>
             </div>
             <div class="header-right">
+                <span class="user-name" id="userName" style="margin-right: 16px; font-weight: 500;">Загрузка...</span>
                 <button class="btn btn-primary" id="connectPhoneBtn" style="display: block;">
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                         <path d="M3 1C2.44772 1 2 1.44772 2 2V14C2 14.5523 2.44772 15 3 15H13C13.5523 15 14 14.5523 14 14V2C14 1.44772 13.5523 1 13 1H3Z" stroke="currentColor" stroke-width="1.5"/>
@@ -47,11 +48,8 @@
                     </svg>
                     Подключить телефон
                 </button>
-                <button class="btn btn-success" id="testCallEchoBtn" style="display: none; margin-left: 8px;">
-                    📞 100 (Эхо)
-                </button>
-                <button class="btn btn-success" id="testCallTimeBtn" style="display: none; margin-left: 8px;">
-                    📞 101 (Время)
+                <button class="btn btn-secondary" id="logoutBtn" style="margin-left: 8px;">
+                    Выход
                 </button>
             </div>
         </header>
@@ -61,16 +59,36 @@
             <!-- Calls Panel -->
             <aside class="calls-panel">
                 <div class="panel-header">
-                    <h2>Активные звонки</h2>
-                    <span class="call-count" id="callCount">0</span>
+                    <h2>Звонки</h2>
+                    <div class="panel-tabs">
+                        <button class="tab-btn active" data-tab="active">Активные</button>
+                        <button class="tab-btn" data-tab="history">История</button>
+                    </div>
                 </div>
-                <div class="calls-list" id="callsList">
+
+                <!-- Outbound Call Form -->
+                <div class="outbound-form" id="outboundForm" style="padding: 16px; border-bottom: 1px solid #eee;">
+                    <input type="tel" id="outboundNumber" placeholder="+7 XXX XXX-XX-XX" style="width: 100%; padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 8px; margin-bottom: 8px; font-size: 14px;">
+                    <button class="btn btn-success" id="makeCallBtn" style="width: 100%; padding: 10px;">
+                        📞 Позвонить
+                    </button>
+                </div>
+
+                <!-- Active Calls Tab -->
+                <div class="calls-list" id="callsList" data-tab-content="active">
                     <div class="empty-state">
                         <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                             <circle cx="24" cy="24" r="20" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
                             <path d="M24 18V24L28 28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
                         </svg>
-                        <p>Ожидание звонков...</p>
+                        <p>Нет активных звонков</p>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div class="calls-list" id="callsHistory" data-tab-content="history" style="display: none;">
+                    <div class="empty-state">
+                        <p>Загрузка истории...</p>
                     </div>
                 </div>
             </aside>
@@ -174,7 +192,8 @@
         </main>
     </div>
 
-    <script src="webrtc.js?v=12"></script>
-    <script src="app.js?v=12"></script>
+    <script src="auth.js?v=1"></script>
+    <script src="webrtc.js?v=13"></script>
+    <script src="app.js?v=13"></script>
 </body>
 </html>

@@ -250,19 +250,21 @@ class CallSessionAdmin(ModelView, model=CallSession):
     }
 
 
-def setup_admin(app, engine):
+def setup_admin(app, engine, authentication_backend=None):
     """
     Setup SQLAdmin with FastAPI app
     
     Args:
         app: FastAPI application instance
         engine: SQLAlchemy engine
+        authentication_backend: Authentication backend for admin panel
     """
     admin = Admin(
         app,
         engine,
         title="AI Call Agent - Админ Панель",
-        base_url="/admin"
+        base_url="/admin",
+        authentication_backend=authentication_backend
     )
     
     # Register model views

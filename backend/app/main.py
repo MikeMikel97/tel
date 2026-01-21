@@ -14,9 +14,11 @@ from .config import get_settings
 from .schemas.events import Call, CallEvent, Suggestion
 from .services.call_manager import call_manager
 from .services.asterisk_ari import ari_service, audio_receiver
-from .api import auth, admin
+from .api import auth, admin, calls
 from .database import Base, engine
 from .admin_panel import setup_admin
+from .admin_auth import create_admin_auth
+from starlette.middleware.sessions import SessionMiddleware
 
 settings = get_settings()
 
@@ -87,8 +89,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Setup Admin Panel
-setup_admin(app, engine)
+# Add session middleware for admin authentication
+app.add_middleware(
+    SessionMiddleware,
+    secret_key="your-super-secret-key-change-in-production-please"
+)
+
+# Setup Admin Panel with authentication
+admin_auth = create_admin_auth()
+setup_admin(app, engine, authentication_backend=admin_auth)
 
 # CORS для фронтенда
 app.add_middleware(
@@ -102,6 +111,7 @@ app.add_middleware(
 # Include API routers
 app.include_router(auth.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
+app.include_router(calls.router, prefix="/api")
 
 
 # === REST API Endpoints ===

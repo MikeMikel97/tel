@@ -3,12 +3,15 @@ Admin Panel using SQLAdmin
 """
 from sqladmin import Admin, ModelView
 from sqlalchemy import select
+from wtforms import StringField, PasswordField
+from wtforms.validators import Optional
 
 from .models.company import Company
 from .models.sip_trunk import SIPTrunk
 from .models.phone_number import PhoneNumber
 from .models.user import User
 from .models.call_session import CallSession
+from .core.security import get_password_hash
 
 
 class CompanyAdmin(ModelView, model=Company):
@@ -171,9 +174,18 @@ class UserAdmin(ModelView, model=User):
     column_sortable_list = [User.id, User.username, User.created_at]
     column_default_sort = [(User.created_at, True)]
     
+    # Exclude password_hash from form, we'll handle it separately
+    form_excluded_columns = [User.password_hash, User.last_login, User.assigned_number_ids]
+    
+    # Add custom fields for passwords
+    form_extra_fields = {
+        "password": PasswordField("Пароль для входа в UI", validators=[Optional()]),
+    }
+    
     form_columns = [
         User.company_id,
         User.username,
+        "password",  # Custom field
         User.full_name,
         User.email,
         User.role,
@@ -194,7 +206,8 @@ class UserAdmin(ModelView, model=User):
         User.sip_password: "SIP пароль",
         User.current_number_id: "Текущий номер",
         User.is_active: "Активен",
-        User.created_at: "Создан"
+        User.created_at: "Создан",
+        "password": "Пароль для входа в UI"
     }
     
     # Hide passwords in list view
@@ -202,6 +215,49 @@ class UserAdmin(ModelView, model=User):
         User.password_hash: lambda m, a: "********" if m.password_hash else "",
         User.sip_password: lambda m, a: "********" if m.sip_password else ""
     }
+    
+    form_args = {
+        "company_id": {
+            "label": "Компания",
+            "description": "Выберите компанию для пользователя"
+        },
+        "username": {
+            "label": "Логин",
+            "description": "Логин для входа в UI операторов"
+        },
+        "role": {
+            "label": "Роль",
+            "description": "admin или operator"
+        },
+        "sip_username": {
+            "label": "SIP логин",
+            "description": "Логин для регистрации в Asterisk"
+        },
+        "sip_password": {
+            "label": "SIP пароль",
+            "description": "Пароль для SIP (не для входа в UI!)"
+        }
+    }
+    
+    async def on_model_change(self, data, model, is_created, request):
+        """
+        Handle password hashing when creating/updating user
+        """
+        # Get password from form
+        password = data.get("password")
+        
+        # If password provided, hash it
+        if password:
+            model.password_hash = get_password_hash(password)
+            # Remove password from data so it doesn't try to save to DB
+            data.pop("password", None)
+        
+        # If creating new user and no password provided, generate one
+        if is_created and not password:
+            default_password = "operator123"  # You can change this
+            model.password_hash = get_password_hash(default_password)
+        
+        return await super().on_model_change(data, model, is_created, request)
 
 
 class CallSessionAdmin(ModelView, model=CallSession):

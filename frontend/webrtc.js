@@ -199,10 +199,17 @@ class WebRTCPhone {
                 });
             });
             
+            console.log('📞 Calling session.answer() with options:', options);
             this.session.answer(options);
+            console.log('✅ session.answer() called successfully');
             
         } catch (error) {
-            console.error('Failed to accept call:', error);
+            console.error('❌ Failed to accept call:', error);
+            console.error('Error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             this.onError(error);
         }
     }

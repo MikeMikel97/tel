@@ -126,7 +126,12 @@ class WebRTCPhone {
         });
         
         session.on('failed', (e) => {
-            console.error('❌ Call failed:', e.cause);
+            console.error('❌ Call failed:', e);
+            console.error('Failed details:', {
+                cause: e.cause,
+                originator: e.originator,
+                message: e.message
+            });
             this.handleCallEnd();
         });
         
@@ -142,6 +147,17 @@ class WebRTCPhone {
         
         try {
             console.log('Accepting call...');
+            
+            // Проверяем доступ к микрофону
+            try {
+                console.log('🎤 Requesting microphone access...');
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                console.log('✅ Microphone access granted:', stream);
+                console.log('Audio tracks:', stream.getAudioTracks());
+            } catch (mediaError) {
+                console.error('❌ Microphone access DENIED:', mediaError);
+                throw new Error(`Microphone access denied: ${mediaError.message}`);
+            }
             
             // Умная конфигурация: для localhost не используем STUN, для продакшена - используем
             const isLocalhost = window.location.hostname === 'localhost' || 

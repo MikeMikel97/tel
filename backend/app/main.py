@@ -106,7 +106,9 @@ app.add_middleware(ProxyHeadersMiddleware)
 # Add session middleware for admin authentication
 app.add_middleware(
     SessionMiddleware,
-    secret_key="your-super-secret-key-change-in-production-please"
+    secret_key="your-super-secret-key-change-in-production-please",
+    https_only=False,  # We're behind nginx proxy that handles HTTPS
+    same_site='lax'    # Prevent CSRF while allowing navigation
 )
 
 # Setup Admin Panel with authentication

@@ -3,9 +3,6 @@ FROM nginx:alpine
 # Копирование файлов frontend
 COPY . /usr/share/nginx/html/
 
-# Кастомная конфигурация nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
 # Порт
 EXPOSE 80
 

@@ -5,7 +5,7 @@ version: '3.8'
 
 networks:
   telephony-net:
-    name: telephony_default  # Использует ту же сеть что и docker-compose.yml
+    # Использует ту же сеть что и docker-compose.yml
 
 services:
   # Nginx reverse proxy с SSL

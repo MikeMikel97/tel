@@ -5,7 +5,7 @@ version: '3.8'
 
 networks:
   telephony-net:
-    name: telephony_telephony-net
+    name: telephony_default
     external: true  # Использует существующую сеть из docker-compose.yml
 
 services:

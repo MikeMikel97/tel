@@ -5,7 +5,8 @@ version: '3.8'
 
 networks:
   telephony-net:
-    # Использует сеть из docker-compose.yml
+    name: telephony_telephony-net
+    external: true  # Использует существующую сеть из docker-compose.yml
 
 services:
   # Nginx reverse proxy с SSL

@@ -74,9 +74,8 @@ class AICallAgent {
     
     getWebSocketUrl() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const host = window.location.hostname || 'localhost';
-        const port = 8000; // Backend port
-        return `${protocol}//${host}:${port}/ws`;
+        const host = window.location.host; // Includes port if present
+        return `${protocol}//${host}/ws`;
     }
     
     setConnectionStatus(status, text) {
@@ -459,8 +458,11 @@ class AICallAgent {
             this.elements.connectPhoneBtn.textContent = 'Подключение...';
             
             const host = window.location.hostname;
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.host; // Includes port if present
+            
             this.phone = new WebRTCPhone({
-                server: `ws://${host}:8088/asterisk/ws`,
+                server: `${wsProtocol}//${wsHost}/asterisk/ws`,
                 domain: host,
                 realm: 'asterisk',
                 username: 'operator',
@@ -608,8 +610,8 @@ class AICallAgent {
     
     async startDemo() {
         try {
-            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
-            const response = await fetch(`${apiUrl}/api/demo/call`, { method: 'POST' });
+            // Используем относительный путь
+            const response = await fetch('/api/demo/call', { method: 'POST' });
             const data = await response.json();
             console.log('Demo started:', data);
         } catch (e) {
@@ -622,8 +624,8 @@ class AICallAgent {
         if (!this.activeCallId) return;
         
         try {
-            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
-            await fetch(`${apiUrl}/api/demo/end/${this.activeCallId}`, { method: 'POST' });
+            // Используем относительный путь
+            await fetch(`/api/demo/end/${this.activeCallId}`, { method: 'POST' });
         } catch (e) {
             console.error('Failed to end call:', e);
         }
@@ -657,8 +659,8 @@ AICallAgent.prototype.loadUserInfo = async function() {
 // === Call History ===
 AICallAgent.prototype.loadCallHistory = async function() {
     try {
-        const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
-        const response = await auth.fetchWithAuth(`${apiUrl}/api/calls/history?limit=50`);
+        // Используем относительный путь
+        const response = await auth.fetchWithAuth('/api/calls/history?limit=50');
         const calls = await response.json();
         
         const historyContainer = document.getElementById('callsHistory');

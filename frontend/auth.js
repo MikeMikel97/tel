@@ -27,8 +27,8 @@ class Auth {
         }
 
         try {
-            const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
-            const response = await fetch(`${apiUrl}/api/auth/me`, {
+            // Используем относительный путь - nginx проксирует на backend
+            const response = await fetch('/api/auth/me', {
                 headers: this.getAuthHeader()
             });
 

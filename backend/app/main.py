@@ -4,10 +4,11 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import List
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from loguru import logger
 
 from .config import get_settings
@@ -55,6 +56,16 @@ class ConnectionManager:
 ws_manager = ConnectionManager()
 
 
+# Middleware для правильной обработки X-Forwarded-Proto при HTTPS через reverse proxy
+class ProxyHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        # Обрабатываем X-Forwarded-Proto для правильной генерации URL
+        forwarded_proto = request.headers.get("X-Forwarded-Proto")
+        if forwarded_proto:
+            request.scope["scheme"] = forwarded_proto
+        return await call_next(request)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifecycle события приложения"""
@@ -88,6 +99,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add proxy headers middleware FIRST (to handle X-Forwarded-Proto)
+app.add_middleware(ProxyHeadersMiddleware)
 
 # Add session middleware for admin authentication
 app.add_middleware(

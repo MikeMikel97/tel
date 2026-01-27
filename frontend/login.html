@@ -182,8 +182,8 @@
             const password = document.getElementById('password').value;
 
             try {
-                const apiUrl = window.location.hostname === 'localhost' ? 'http://localhost:8000' : `http://${window.location.hostname}:8000`;
-                const response = await fetch(`${apiUrl}/api/auth/login`, {
+                // Используем относительный путь - nginx проксирует на backend
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'

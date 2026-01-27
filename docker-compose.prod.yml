@@ -1,0 +1,172 @@
+# Production Docker Compose with HTTPS
+version: '3.8'
+
+networks:
+  telephony-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  asterisk-logs:
+  asterisk-recordings:
+  asterisk-sounds:
+  asterisk-dynamic-configs:
+  backend-data:
+  certbot-conf:
+  certbot-www:
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: telephony-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: telephony
+      POSTGRES_USER: telephony_user
+      POSTGRES_PASSWORD: telephony_password_2024
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - telephony-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U telephony_user -d telephony"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Asterisk PBX
+  asterisk:
+    build:
+      context: .
+      dockerfile: asterisk/Dockerfile
+    container_name: telephony-asterisk
+    hostname: asterisk
+    restart: unless-stopped
+    volumes:
+      - ./asterisk/asterisk.conf:/etc/asterisk/asterisk.conf:ro
+      - ./asterisk/ari.conf:/etc/asterisk/ari.conf:ro
+      - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf:ro
+      - ./asterisk/pjsip_mango.conf:/etc/asterisk/pjsip_mango.conf:ro
+      - ./asterisk/http.conf:/etc/asterisk/http.conf:ro
+      - ./asterisk/extensions.conf:/etc/asterisk/extensions.conf:ro
+      - ./asterisk/extensions_mango.conf:/etc/asterisk/extensions_mango.conf:ro
+      - ./asterisk/modules.conf:/etc/asterisk/modules.conf:ro
+      - asterisk-dynamic-configs:/etc/asterisk/dynamic:rw
+      - asterisk-logs:/var/log/asterisk
+      - asterisk-recordings:/var/spool/asterisk/monitor
+      - asterisk-sounds:/var/lib/asterisk/sounds
+    environment:
+      - TZ=UTC
+    networks:
+      - telephony-net
+    healthcheck:
+      test: ["CMD", "asterisk", "-rx", "core show version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: telephony-backend
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    volumes:
+      - backend-data:/app/data
+      - asterisk-dynamic-configs:/etc/asterisk/dynamic:rw
+      - asterisk-recordings:/var/spool/asterisk/recording:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      asterisk:
+        condition: service_healthy
+    networks:
+      - telephony-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: telephony-frontend
+    restart: unless-stopped
+    networks:
+      - telephony-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx Reverse Proxy with SSL
+  nginx:
+    image: nginx:alpine
+    container_name: telephony-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx-ssl.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-conf:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot:ro
+    depends_on:
+      - frontend
+      - backend
+      - asterisk
+    networks:
+      - telephony-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Certbot for SSL certificates
+  certbot:
+    image: certbot/certbot
+    container_name: telephony-certbot
+    restart: unless-stopped
+    volumes:
+      - certbot-conf:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - telephony-net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

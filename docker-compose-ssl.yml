@@ -3,6 +3,10 @@
 
 version: '3.8'
 
+networks:
+  telephony-net:
+    # Использует сеть из docker-compose.yml
+
 services:
   # Nginx reverse proxy с SSL
   nginx-proxy:

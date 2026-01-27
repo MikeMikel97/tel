@@ -1,0 +1,33 @@
+# Docker Compose override для ограничения логов
+# Этот файл автоматически применяется вместе с docker-compose.yml
+
+version: '3.8'
+
+services:
+  asterisk:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  
+  backend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  
+  frontend:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+  
+  postgres:
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

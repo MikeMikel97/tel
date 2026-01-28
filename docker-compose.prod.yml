@@ -86,6 +86,9 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env
+    environment:
+      - FORWARDED_ALLOW_IPS=*
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips="*"
     volumes:
       - backend-data:/app/data
       - asterisk-dynamic-configs:/etc/asterisk/dynamic:rw

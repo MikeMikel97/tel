@@ -56,14 +56,7 @@ class ConnectionManager:
 ws_manager = ConnectionManager()
 
 
-# Middleware для правильной обработки X-Forwarded-Proto при HTTPS через reverse proxy
-class ProxyHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # Обрабатываем X-Forwarded-Proto для правильной генерации URL
-        forwarded_proto = request.headers.get("X-Forwarded-Proto")
-        if forwarded_proto:
-            request.scope["scheme"] = forwarded_proto
-        return await call_next(request)
+# Middleware больше не нужен - Uvicorn с флагом --proxy-headers сам обрабатывает X-Forwarded-*
 
 
 @asynccontextmanager
@@ -100,15 +93,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add proxy headers middleware FIRST (to handle X-Forwarded-Proto)
-app.add_middleware(ProxyHeadersMiddleware)
-
-# Add session middleware for admin authentication
+# SessionMiddleware для SQLAdmin
+# С флагом --proxy-headers Uvicorn правильно определяет HTTPS, поэтому https_only=True безопасен
 app.add_middleware(
     SessionMiddleware,
-    secret_key="your-super-secret-key-change-in-production-please",
-    https_only=False,  # We're behind nginx proxy that handles HTTPS
-    same_site='lax'    # Prevent CSRF while allowing navigation
+    secret_key="d01946dc82934be2bf5e89dd97a32fc0d3591ef6cbf4c3993af934723ea593f1",
+    max_age=86400,  # 24 hours
+    same_site="lax",
+    https_only=True,  # Uvicorn с --proxy-headers корректно определяет HTTPS
+    path="/"
 )
 
 # Setup Admin Panel with authentication

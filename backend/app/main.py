@@ -94,13 +94,13 @@ app = FastAPI(
 )
 
 # SessionMiddleware для SQLAdmin
-# С флагом --proxy-headers Uvicorn правильно определяет HTTPS, поэтому https_only=True безопасен
+# https_only=False т.к. backend получает HTTP от nginx (nginx терминирует SSL)
 app.add_middleware(
     SessionMiddleware,
     secret_key="d01946dc82934be2bf5e89dd97a32fc0d3591ef6cbf4c3993af934723ea593f1",
     max_age=86400,  # 24 hours
     same_site="lax",
-    https_only=True,  # Uvicorn с --proxy-headers корректно определяет HTTPS
+    https_only=False,  # Backend получает HTTP от nginx, который терминирует SSL
     path="/"
 )
 
